@@ -48,12 +48,11 @@ Class Splash Extends Screen
 	End
 
 	Method OnStart() Override
-		Print "Menu started"
 		SetTimer(60)
 	End
 
 	Method OnStop() Override
-		Print "Menu stopped"
+		timer.Cancel()
 	End
 
 	Method OnRender( canvas:Canvas ) Override
@@ -70,8 +69,7 @@ Class Splash Extends Screen
 
 	Method OnUpdate() Override
 		If Keyboard.KeyHit( Key.Space )
-			Print""
-			game.Set()
+			menu.Set()
 		Endif
 	End
 
@@ -93,7 +91,110 @@ Class Splash Extends Screen
 End Class 
 
 Class Menu Extends Screen
+	Field btnNewGame:GuiButton
+	Field btnLoadGame:GuiButton
+	Field btnSaveGame:GuiButton
+	Field btnOptions:GuiButton
+	Field btnQuit:GuiButton
+	Field layer:GuiLayer
 	
+	Method OnStart() Override
+
+	End
+
+	Method OnStop() Override
+
+	End
+
+	Method OnRender( canvas:Canvas ) Override
+		canvas.DrawImage(starfield, 0, 0)
+		
+		layer.Update()
+		layer.Draw(canvas)
+	End
+
+	Method OnUpdate() Override
+		' Game update code here!
+	End
+
+	Method RunOnce() Override
+		Print "SETTING UP MENU GUI"
+		SetupGUI()
+	End
+		
+	Method SetupGUI()
+		layer = New GuiLayer(ScreenManager)
+		
+		btnNewGame = New GuiButton
+		btnNewGame.Layer = layer
+		btnNewGame.Location = New Vec2f(SCREEN_WIDTH/2, 200)
+		btnNewGame.Width = 300
+		btnNewGame.Height = 40
+		btnNewGame.Font = arial24
+		btnNewGame.Text = "New Game"
+		btnNewGame.Surface.PatchData=New Int[](8)
+		btnNewGame.Surface.DrawData( GuiState.Idle ).Image=Image.Load( "asset::button300x40.png" )		
+		btnNewGame.Surface.DrawData( GuiState.Idle ).Color=New Color( .7,.7,.7,1 )
+		btnNewGame.Surface.DrawData( GuiState.Down ).Scale=New Vec2f( .98,.98 )
+		btnNewGame.Label.DrawData( GuiState.Idle ).Color=New Color( .9,.9,.9,1 )
+		btnNewGame.Label.DrawData( GuiState.Down ).Scale=btnNewGame.Surface.DrawData( GuiState.Down ).Scale
+		
+		btnLoadGame = New GuiButton
+		btnLoadGame.Layer = layer
+		btnLoadGame.Location = New Vec2f(SCREEN_WIDTH/2, 250)
+		btnLoadGame.Width = 300
+		btnLoadGame.Height = 40
+		btnLoadGame.Font = arial24
+		btnLoadGame.Text = "Load Game"
+		btnLoadGame.Surface.PatchData=New Int[](8)
+		btnLoadGame.Surface.DrawData( GuiState.Idle ).Image=Image.Load( "asset::button300x40.png" )		
+		btnLoadGame.Surface.DrawData( GuiState.Idle ).Color=New Color( .7,.7,.7,1 )
+		btnLoadGame.Surface.DrawData( GuiState.Down ).Scale=New Vec2f( .98,.98 )
+		btnLoadGame.Label.DrawData( GuiState.Idle ).Color=New Color( .9,.9,.9,1 )
+		btnLoadGame.Label.DrawData( GuiState.Down ).Scale=btnLoadGame.Surface.DrawData( GuiState.Down ).Scale	
+		
+		btnSaveGame = New GuiButton
+		btnSaveGame.Layer = layer
+		btnSaveGame.Location = New Vec2f(SCREEN_WIDTH/2, 300)
+		btnSaveGame.Width = 300
+		btnSaveGame.Height = 40
+		btnSaveGame.Font = arial24
+		btnSaveGame.Text = "Save Game"
+		btnSaveGame.Surface.PatchData=New Int[](8)
+		btnSaveGame.Surface.DrawData( GuiState.Idle ).Image=Image.Load( "asset::button300x40.png" )		
+		btnSaveGame.Surface.DrawData( GuiState.Idle ).Color=New Color( .7,.7,.7,1 )
+		btnSaveGame.Surface.DrawData( GuiState.Down ).Scale=New Vec2f( .98,.98 )
+		btnSaveGame.Label.DrawData( GuiState.Idle ).Color=New Color( .9,.9,.9,1 )
+		btnSaveGame.Label.DrawData( GuiState.Down ).Scale=btnSaveGame.Surface.DrawData( GuiState.Down ).Scale	
+		
+		btnOptions = New GuiButton
+		btnOptions.Layer = layer
+		btnOptions.Location = New Vec2f(SCREEN_WIDTH/2, 350)
+		btnOptions.Width = 300
+		btnOptions.Height = 40
+		btnOptions.Font = arial24
+		btnOptions.Text = "Options"
+		btnOptions.Surface.PatchData=New Int[](8)
+		btnOptions.Surface.DrawData( GuiState.Idle ).Image=Image.Load( "asset::button300x40.png" )		
+		btnOptions.Surface.DrawData( GuiState.Idle ).Color=New Color( .7,.7,.7,1 )
+		btnOptions.Surface.DrawData( GuiState.Down ).Scale=New Vec2f( .98,.98 )
+		btnOptions.Label.DrawData( GuiState.Idle ).Color=New Color( .9,.9,.9,1 )
+		btnOptions.Label.DrawData( GuiState.Down ).Scale=btnOptions.Surface.DrawData( GuiState.Down ).Scale		
+
+		btnQuit = New GuiButton
+		btnQuit.Layer = layer
+		btnQuit.Location = New Vec2f(SCREEN_WIDTH/2, 400)
+		btnQuit.Width = 300
+		btnQuit.Height = 40
+		btnQuit.Font = arial24
+		btnQuit.Text = "Quit"
+		btnQuit.Surface.PatchData=New Int[](8)
+		btnQuit.Surface.DrawData( GuiState.Idle ).Image=Image.Load( "asset::button300x40.png" )		
+		btnQuit.Surface.DrawData( GuiState.Idle ).Color=New Color( .7,.7,.7,1 )
+		btnQuit.Surface.DrawData( GuiState.Down ).Scale=New Vec2f( .98,.98 )
+		btnQuit.Label.DrawData( GuiState.Idle ).Color=New Color( .9,.9,.9,1 )
+		btnQuit.Label.DrawData( GuiState.Down ).Scale=btnQuit.Surface.DrawData( GuiState.Down ).Scale	
+	End Method	
 End Class 
 
 Class Settings Extends Screen
