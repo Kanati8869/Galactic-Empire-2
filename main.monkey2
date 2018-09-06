@@ -3,7 +3,8 @@
 #Import "<pyro-framework>"
 #Import "<pyro-gui>"
 
-#Import "assets.monkey2"
+#Import "assets"
+#Import "classes"
 
 Using std..
 Using mojo..
@@ -29,7 +30,8 @@ Function Main()
 	
 	New AppInstance
 
-
+	New Empire("Galactic Empire v2.0", SCREEN_WIDTH, SCREEN_HEIGHT)
+	
 	App.Run()
 End Function 
 
