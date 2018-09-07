@@ -21,12 +21,17 @@ Global MaxTurns:Int = 250
 
 Global c:Config = New Config
 
+Global GameYear:Int = 3000
+Global CurrentPlayer:Int = 1
 
-
+Global GameMap:TheGameMap = New TheGameMap
+Global P1Fleets:Stack<Fleet> = New Stack<Fleet>
 
 
 Function Main()
 	LoadSettings()
+	
+	GetSprites()
 	
 	New AppInstance
 

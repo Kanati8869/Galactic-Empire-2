@@ -6,8 +6,8 @@ Global game:Game
 Global sendfleet:SendFleet
 Global combat:Combat
 Global reinforcements:Reinforcements
-Global fleets:Fleets
-Global planets:Planets
+Global showfleets:Fleets
+Global showplanets:Planets
 Global gameover:GameOver
 
 Class Empire Extends ScreenManager
@@ -21,8 +21,8 @@ Class Empire Extends ScreenManager
 		sendfleet = New SendFleet
 		combat = New Combat
 		reinforcements = New Reinforcements
-		fleets = New Fleets
-		planets = New Planets
+		showfleets = New Fleets
+		showplanets = New Planets
 		gameover = New GameOver
 		
 		splash.Set()
@@ -231,6 +231,13 @@ Class GameSetup Extends Screen
 	Field btnGenerate:GuiButton
 	Field btnCancel:GuiButton
 	Field btnStart:GuiButton
+
+	Field Pname:String = "Player 1"
+	Field NumPlanets:Int = MaxPlanets
+	Field NumTurns:Int = MaxTurns
+	Field MinProd:Int = MinProduction
+	Field MaxProd:Int = MaxProduction
+	Field MapGenerated:Bool = False
 	
 	Method OnStart() Override
 		
@@ -245,14 +252,94 @@ Class GameSetup Extends Screen
 		canvas.DrawImage(starfield, 0, 0)
 		canvas.Color = Color.White
 
+		'draw minimap 374 x 210 with 5 pixel margins
+		canvas.Color = Color.Black
+		canvas.OutlineMode = OutlineMode.Solid
+		canvas.OutlineColor = Color.White
+		canvas.DrawRect(SCREEN_WIDTH/2 - 247, 540, 494, 280)
+		canvas.OutlineMode = OutlineMode.None
+		canvas.Color = Color.White
+		
+		If MapGenerated Then 
+			Local tmpcolor:Color = canvas.Color
+			For Local tmp:Planet = Eachin GameMap.Planets
+				canvas.Color = tmp.OwnerColor
+				canvas.DrawPoint(SCREEN_WIDTH/2 - 242 + tmp.MapX, 565 + tmp.MapY)
+			Next				
+			canvas.Color = tmpcolor
+		Endif
+		
 		layer.Update()
 		layer.Draw(canvas)
 	End
 
 	Method OnUpdate() Override
-		If Keyboard.KeyReleased(Key.Escape) Then 
-			Print "Going back to menu"
+		If Keyboard.KeyReleased(Key.Escape) Or btnCancel.Released Then 
 			menu.Set()
+		Endif
+
+		If btnSubPlanets.Released Then 
+			NumPlanets -= 5
+			If NumPlanets < 10 NumPlanets = 10
+			btnNumPlanets.Text = NumPlanets								
+		Endif
+		
+		If btnAddPlanets.Released Then 
+			NumPlanets += 5
+			If NumPlanets > 100 NumPlanets = 100
+			btnNumPlanets.Text = NumPlanets				
+		Endif
+		
+		If btnSubMin.Released Then 
+			MinProd -= 1
+			If MinProd < 0 MinProd = 0
+			btnMinProduction.Text = MinProd				
+			btnMaxProduction.Text = MaxProd	
+		Endif
+
+		If btnAddMin.Released Then 
+			MinProd += 1
+			If MinProd > 20 MinProd = 20
+			If MaxProd < MinProd MaxProd = MinProd
+			btnMinProduction.Text = MinProd				
+			btnMaxProduction.Text = MaxProd	
+		Endif
+		If btnSubMax.Released Then 
+			MaxProd -= 1
+			If MaxProd < MinProd MaxProd = MinProd
+			btnMinProduction.Text = MinProd				
+			btnMaxProduction.Text = MaxProd	
+		Endif
+
+		If btnAddMax.Released Then 
+			MaxProd += 1
+			If MinProd > 50 MinProd = 50
+			btnMinProduction.Text = MinProd				
+			btnMaxProduction.Text = MaxProd	
+		Endif
+
+		If btnSubTurn.Released Then 
+			NumTurns -= 25
+			If NumTurns < 10 NumTurns = 10
+			btnTurns.Text = NumTurns				
+		Endif
+
+		If btnAddTurn.Released Then 
+			NumTurns += 25
+			If NumTurns > 1000 NumTurns = 1000
+			btnTurns.Text = NumTurns				
+		Endif
+		
+		If btnGenerate.Released Then 
+			GameMap.MinProduction = MinProd
+			GameMap.MaxProduction = MaxProd
+			GameMap.GenerateMap(470,252,4,4,16,16,NumPlanets)	
+			MapGenerated = True			
+		Endif
+		
+		If btnStart.Released Then 
+			GameMap.MaxTurns = NumTurns
+			'Need to move on to game screen
 		Endif
 	End
 
@@ -317,7 +404,7 @@ Class GameSetup Extends Screen
 		txtName.Border = 40
 		txtName.Surface.PatchData = New Int[](8)
 		txtName.Surface.DrawData( GuiState.Idle ).Image = btn300x40
-		txtName.Text = "Playername"
+		txtName.Text = Pname
 		txtName.Font = arial24								
 		
 		btnSubMin = New GuiButton
@@ -342,7 +429,7 @@ Class GameSetup Extends Screen
 		btnMinProduction.Height = 40
 		btnMinProduction.Handle = New Vec2f(0,0)
 		btnMinProduction.Font = arial24
-		btnMinProduction.Text = "5"
+		btnMinProduction.Text = MinProduction
 		btnMinProduction.Surface.DrawData( GuiState.Idle ).Image=btn200x40
 
 		btnAddMin = New GuiButton
@@ -382,7 +469,7 @@ Class GameSetup Extends Screen
 		btnMaxProduction.Height = 40
 		btnMaxProduction.Handle = New Vec2f(0,0)
 		btnMaxProduction.Font = arial24
-		btnMaxProduction.Text = "25"
+		btnMaxProduction.Text = MaxProduction
 		btnMaxProduction.Surface.DrawData( GuiState.Idle ).Image=btn200x40
 		
 		btnAddMax = New GuiButton
@@ -422,7 +509,7 @@ Class GameSetup Extends Screen
 		btnNumPlanets.Height = 40
 		btnNumPlanets.Handle = New Vec2f(0,0)
 		btnNumPlanets.Font = arial24
-		btnNumPlanets.Text = "20"
+		btnNumPlanets.Text = MaxPlanets
 		btnNumPlanets.Surface.DrawData( GuiState.Idle ).Image=btn200x40
 				
 		btnAddPlanets = New GuiButton
@@ -462,7 +549,7 @@ Class GameSetup Extends Screen
 		btnTurns.Height = 40
 		btnTurns.Handle = New Vec2f(0,0)
 		btnTurns.Font = arial24
-		btnTurns.Text = "100"
+		btnTurns.Text = MaxTurns
 		btnTurns.Surface.DrawData( GuiState.Idle ).Image=btn200x40
 
 		btnAddTurn = New GuiButton
@@ -554,3 +641,451 @@ End Class
 Class GameOver Extends Screen
 	
 End Class 
+
+
+
+
+
+Enum Direction
+	Forward
+	Back
+End Enum
+
+Class Sprite
+	Private
+		Field x:Int
+		Field y:Int
+		Field animated:Bool
+		Field animsheet:Image
+		Field frames:Image[] = New Image[5]
+		Field img:Image
+		Field framecount:Int
+		Field numframes:Int
+		Field framewidth:Int
+		Field frameheight:Int
+		Field animdirection:Direction = Direction.Forward
+		Field animfps:Int
+		Field bounce:Bool = False
+		Field animtimer:Timer
+		Field mapx:Int
+		Field mapy:Int
+		Field rotation:Float = 0.0
+		Field speed:Int
+		Field animcount:Int
+		Field destination:Vec2<Int>
+		Field animcountdown:Int
+
+	Public	
+	Property X:Int()	
+		Return x
+	Setter (t:Int)
+		x = t
+	End Property 
+	
+	Property Y:Int()
+		Return y
+	Setter (t:Int)
+		y = t
+	End Property	
+	
+	Property MapX:Int()	
+		Return mapx
+	Setter (t:Int)
+		mapx = t
+	End Property 
+	
+	Property MapY:Int()
+		Return mapy
+	Setter (t:Int)
+		mapy = t
+	End Property	
+
+	Property Animated:Bool()
+		Return animated
+	Setter (t:Bool)
+		animated = t
+	End Property
+	
+	Property AnimSheet:Image()
+		Return animsheet
+	Setter (t:Image)
+		animsheet = t
+	End Property
+
+	Property FrameWidth:Int()
+		Return framewidth
+	Setter (t:Int)
+		framewidth = t
+	End Property 
+	
+	Property FrameHeight:Int()
+		Return frameheight
+	Setter (t:Int)
+		frameheight = t
+	End Property
+
+	Property SpriteImage:Image()
+		Return img
+	Setter (t:Image)
+		img = t
+		img.Handle = New Vec2f(0.5, 0.5)
+	End Property
+
+	Property AnimDirection:Direction()
+		Return animdirection
+	Setter (t:Direction)
+		animdirection = t
+	End Property 
+
+	Property AnimFPS:Int()
+		Return animfps
+	Setter (t:Int)
+		animfps = t
+		animtimer = New Timer(t, Tick)
+		animtimer.Suspended = True
+	End Property 
+	
+	Property Bounce:Bool()
+		Return bounce
+	Setter (t:Bool)
+		bounce = t
+	End Property 
+
+	Property Frames:Int()
+		Return numframes
+	Setter (t:Int)
+		numframes = t
+		frames = frames.Resize(t)
+	End Property		
+
+	Property Rotation:Float()
+		Return rotation
+	Setter (t:Float)
+		rotation = t		
+	End Property
+	
+	Property Speed:Int()
+		Return speed		
+	Setter (t:Int)
+		speed = t
+	End Property 	
+
+	Property AnimCount:Int()
+		Return animcount
+	Setter (t:Int)
+		animcount = t
+	End Property		
+
+	Property Destination:Vec2<Int>()
+		Return destination
+	Setter (t:Vec2<Int>)
+		destination = t
+	End Property
+
+	Method Update() Abstract
+	Method RenderSprite(canvas:Canvas) Abstract
+	Method Tick() Abstract
+	
+	Method GrabSprites()
+		For Local t:Int = 0 To numframes - 1
+			frames[t] = New Image(animsheet, t * framewidth, 0, framewidth, frameheight)
+			frames[t].Handle = New Vec2f(0.5, 0.5)
+		Next		
+	End Method
+	
+	Method BeginAnimation() 
+		If animtimer Then
+			animtimer.Suspended = False
+		Endif
+		
+		If animcount > 0 Then 
+			animcountdown = animcount
+		Endif
+	End Method	
+
+	Method EndAnimation()
+		If animtimer Then
+			animtimer.Suspended = True		
+		Endif
+		
+		If animcount > 0 Then 
+			animcountdown = 0
+		Endif
+	End Method
+End Class 
+
+Class Planet Extends Sprite
+	Private
+		Field production:Int
+		Field ships:Int
+		Field defenses:Int
+		Field owner:Int
+		Field ownercolor:Color
+		Field name:String
+		Field id:Int
+		Field clicked:Bool 
+		
+	Public
+	Property Owner:Int()
+		Return owner
+	Setter (t:Int)
+		owner = t
+	End Property	
+	
+	Property ID:Int()
+		Return id
+	Setter (t:Int)
+		id = t
+	End Property
+		
+	Property Production:Int()
+		Return production
+	Setter (t:Int)
+		production = t
+	End Property
+
+	Property Ships:Int()
+		Return ships
+	Setter (t:Int)
+		ships = t
+	End Property
+
+	Property Defenses:Int()
+		Return defenses
+	Setter (t:Int)
+		defenses = t
+	End Property 
+	
+	Property Name:String()
+		Return name
+	Setter (t:String)
+		name = t
+	End Property 
+
+	Property Clicked:Bool()
+		Return clicked
+		If clicked = True clicked = False
+	Setter (t:Bool)
+		clicked = t
+	End Property
+	
+	Property OwnerColor:Color()
+		Return ownercolor
+	Setter (t:Color)
+		ownercolor = t
+	End Property
+	
+	Method New()
+		name = "Planet " + Rnd(1000,9999)
+		X = 0
+		Y = 0
+		production = 10
+		owner = 0		
+	End Method
+	
+	Method New(pname:String, x:Int, y:Int, prod:Int, own:Int)
+		name = pname
+		X = x
+		Y = y
+		production = prod
+		owner = own		
+	End Method
+	
+	Method Tick() Override
+		If bounce Then
+			If animdirection = Direction.Forward Then 
+				framecount += 1
+			Else
+				framecount -= 1
+			Endif
+		
+			If framecount > numframes - 1 Then 
+				framecount = numframes - 2
+				animdirection = Direction.Back
+			Endif
+		
+			If framecount < 0 Then 
+				framecount = 1
+				animdirection = Direction.Forward
+			Endif
+		Else
+			framecount += 1
+			If framecount > numframes -1 Then 
+				framecount = 0
+			Endif
+		Endif		
+		
+		If animcount > 0 And animcountdown > 0 And framecount = 0 Then 
+			animcountdown -= 1			
+			
+			If animcountdown = 0 Then 
+				EndAnimation()				
+			Endif
+		Endif
+	End Method 
+	
+	Method Update() Override
+
+	End Method 
+	
+	Method RenderSprite(canvas:Canvas) Override
+		Local tmpfont:Font = canvas.Font
+		Local tmpcolor:Color = canvas.Color
+		If animated Then
+			canvas.Color = OwnerColor
+			canvas.DrawImage(frames[framecount], x, y, Deg2Rad(rotation))
+			If CurrentPlayer = owner And Mouse.X >= x - (frames[framecount].Width/2) And Mouse.X <= x + (frames[framecount].Width/2) And Mouse.Y >= y - (frames[framecount].Height/2) And Mouse.Y <= y + (frames[framecount].Height/2) Then
+				canvas.Font = arial12
+				canvas.DrawText(Name, x, y+16, 0.5, 0)
+			Endif
+		Else
+			canvas.Color = OwnerColor
+			canvas.DrawImage(img, x, y, Deg2Rad(rotation))			
+			If CurrentPlayer = owner And Mouse.X >= x - (img.Width/2) And Mouse.X <= x + (img.Width/2) And Mouse.Y >= y - (img.Height/2) And Mouse.Y <= y + (img.Height/2) Then
+				canvas.Font = arial12
+				canvas.DrawText(Name, x, y+16, 0.5, 0)
+			Endif
+		Endif
+		canvas.Font = tmpfont
+		canvas.Color = tmpcolor
+	End Method 
+	
+End Class
+
+Class TheGameMap 
+	Private
+	Global themap:Int[,] = New Int[480,270]
+
+	Global spritegridwidth:Int 
+	Global spritegridheight:Int 
+	Global totalwidth:Int 
+	Global totalheight:Int 
+	Global spriteindentx:Int 
+	Global spriteindenty:Int 	
+
+	Public 	
+	Field MinProduction:Int
+	Field MaxProduction:Int
+	Field MaxTurns:Int
+	
+	Global Planets:Stack<Planet> = New Stack<Planet>
+
+	Method GenerateMap(w:Int, h:Int, grid:Int, buffer:Int, spritewid:Int, spriteht:Int, num:Int)
+		spritegridwidth = spritewid / grid 'This and spritegridheight helps us figure total width + buffer
+		spritegridheight = spriteht / grid
+		totalwidth = spritegridwidth + buffer 'buffer needs to be evenly divisible by 2 as well
+		totalheight = spritegridheight + buffer
+		spriteindentx = buffer / 2
+		spriteindenty = buffer / 2
+		
+		planetnames = New Stack<String>
+		
+		For Local t:Int = 0 To 99
+			planetnames.Add(pnames[t])			
+		Next
+		
+		Planets.Clear()
+		For Local x:Int = 0 To 479
+			For Local y:Int = 0 To 269
+				themap[x,y] = 0
+			Next
+		Next
+		
+		Local count:Int = 0
+			
+		SeedRnd(Millisecs())
+
+		While count < num
+			Local tmpx:Int = Rnd(0, w - buffer)
+			Local tmpy:Int = Rnd(0, h - buffer)
+				
+			If CheckMap(tmpx, tmpy) Then 
+				Continue
+			Endif
+						
+			'otherwise we can fill the buffer area with -1 and then drop in the planet as well
+			For Local tx:Int = tmpx To tmpx + totalwidth - 1
+				For Local ty:Int = tmpy To tmpy + totalheight - 1
+					themap[tx,ty] = -1
+				Next
+			Next			
+			themap[tmpx + spriteindentx, tmpy + spriteindenty] = count 
+	
+			Local tmpplanet:Planet = New Planet("Lave", 50, 50, 20, 1)
+			
+			tmpplanet.ID = count
+			Local tmpidx:Int = Rnd(0, planetnames.Length-1)
+			tmpplanet.Name = planetnames[tmpidx]
+	        planetnames.Remove(tmpplanet.Name)		
+			tmpplanet.MapX = tmpx+spriteindentx
+			tmpplanet.MapY = tmpy+spriteindenty
+			tmpplanet.X = tmpplanet.MapX * grid
+			tmpplanet.Y = tmpplanet.MapY * grid
+			tmpplanet.Animated = True
+			tmpplanet.AnimSheet = staranim
+			tmpplanet.Frames = 5
+			tmpplanet.AnimFPS = Rnd(10,30)
+			tmpplanet.FrameWidth = 16
+			tmpplanet.FrameHeight = 16
+			tmpplanet.Bounce = True
+			tmpplanet.SpriteImage = star
+            tmpplanet.Production = Rnd(MinProduction, MaxProduction)
+			tmpplanet.Ships = Rnd(0, tmpplanet.Production * 5)
+			tmpplanet.OwnerColor = Color.White
+			tmpplanet.Owner = 0
+
+			If count = 1 Then 
+				tmpplanet.OwnerColor = Color.Red				
+				tmpplanet.Owner = 1
+				tmpplanet.Production = MinProduction + ((MaxProduction - MinProduction) / 1.9)
+				tmpplanet.Ships = Rnd(tmpplanet.Production * 2, tmpplanet.Production * 7.5) + 100
+			Endif
+
+			tmpplanet.GrabSprites()
+	
+			tmpplanet.BeginAnimation()
+	
+			Planets.Add(tmpplanet)
+	
+			count += 1
+		Wend  
+	End Method	
+	
+	Method CheckMap:Bool(tmpx:Int, tmpy:Int)
+		Local result:Bool = False
+		For Local tx:Int = tmpx To tmpx + totalwidth - 1
+			For Local ty:Int = tmpy To tmpy + totalheight - 1
+				If themap[tx,ty] <> 0 Then 
+					result = True
+				Endif
+			Next
+		Next			
+		Return result				
+	End Method	
+End Class
+
+Class Fleet 
+	Field Destination:Planet
+	Field Source:Planet
+	Field Ships:Int
+	Field Turns:Int 'Turns until it reaches destination	
+	Field Done:Bool = False
+End Class
+
+Function Rad2Deg:Double(x:Double)
+	Const DegreeScalar := (180.0 / Pi)	
+	Return (x * DegreeScalar)
+End
+ 
+Function Deg2Rad:Double(x:Double)
+	Const RadianScalar := (Pi / 180.0)
+	Return (x * RadianScalar)
+End
+	
+Function Cosd:Double(x:Double)
+	Return Cos(Rad2Deg(x))
+End
+ 
+Function Sind:Double(x:Double)
+	Return Sin(Rad2Deg(x))
+End
