@@ -339,7 +339,13 @@ Class GameSetup Extends Screen
 		
 		If btnStart.Released Then 
 			GameMap.MaxTurns = NumTurns
-			'Need to move on to game screen
+			If Not MapGenerated Then 
+				GameMap.MinProduction = MinProd
+				GameMap.MaxProduction = MaxProd
+				GameMap.GenerateMap(470,252,4,4,16,16,NumPlanets)	
+				MapGenerated = True						
+			Endif
+			game.Set()
 		Endif
 	End
 
@@ -615,7 +621,165 @@ Class GameSetup Extends Screen
 End Class 
 
 Class Game Extends Screen
+	Field layer:GuiLayer
+
+	Field btnEndTurn:GuiButton = New GuiButton
+	Field btnShowPlanets:GuiButton = New GuiButton
+	Field btnShowFleets:GuiButton = New GuiButton
+
+	Field Selected1:Planet = New Planet
+	Field Selected2:Planet = New Planet
+	Field p1sel:Bool 
+	Field p2sel:Bool 
+	Field p1id:Int 
+	Field p2id:Int
+		
+	Method RunOnce() Override
+		SetupGUI()
+	End
+
+	Method OnKeyEvent( event:KeyEvent ) Override
+	End
+
+	Method OnMouseEvent( event:MouseEvent ) Override
+	End
+
+	Method OnStart() Override
+		
+	End
+
+	Method OnStop() Override
+		
+	End
+
+	Method OnRender( canvas:Canvas ) Override
+		Local RightClick:Bool = Mouse.ButtonReleased(MouseButton.Right)
+		Local LeftClick:Bool = Mouse.ButtonReleased(MouseButton.Left)
+		
+		For Local p:Planet = Eachin GameMap.Planets
+			p.RenderSprite(canvas)					
+
+			If p1sel And p1id = p.ID Then 
+				canvas.DrawImage(slct, p.X - 8, p.Y - 8)
+			Endif	
+			
+			If p1sel And Not p2sel And p1id = p.ID Then 
+				canvas.DrawLine(p.X, p.Y, Mouse.X, Mouse.Y)				
+			Endif
+			
+			If p2sel And p2id = p.ID Then 
+				canvas.DrawImage(slct, p.X - 8, p.Y - 8)				
+			Endif
+			
+			If p1sel And p2sel Then 
+				canvas.DrawLine(Selected1.X, Selected1.Y, Selected2.X, Selected2.Y)				
+			Endif
+		Next
+		
+		layer.Update()
+		layer.Draw(canvas)		
+	End
+
+	Method OnUpdate() Override
+		Local RightClick:Bool = Mouse.ButtonReleased(MouseButton.Right)
+		Local LeftClick:Bool = Mouse.ButtonReleased(MouseButton.Left)
+		Local EscKey:Bool = Keyboard.KeyReleased(Key.Escape)
+		Local AKey:Bool = Keyboard.KeyReleased(Key.A)
+		Local EKey:Bool = Keyboard.KeyReleased(Key.E)
+
+		For Local p:Planet = Eachin GameMap.Planets
+			If LeftClick And Not p1sel Then 'set the variables for first selected planet
+				If Mouse.X >= p.X-8 And Mouse.X <= p.X+8 And Mouse.Y >= p.Y-8 And Mouse.Y <= p.Y+8 And p.Owner = CurrentPlayer Then 				
+					p1sel = True 
+					p1id = p.ID
+					Selected1 = p
+					'KillMapGui()
+				Endif
+			Elseif LeftClick And p1sel And Not p2sel Then 
+				If Mouse.X >= p.X-8 And Mouse.X <= p.X+8 And Mouse.Y >= p.Y-8 And Mouse.Y <= p.Y+8 Then 
+					If p1id = p.ID Then 'we can't select the same planet so kill the transfer
+						p1id = 0
+						p1sel = False
+						Selected1 = Null
+					Else												
+						p2sel = True 
+						p2id = p.ID
+						Selected2 = p
+						'ShowShipSel = True
+						'KillMapGui()
+						'If SendGuiCreated Then 
+						'	EnableSendGUI()
+						'Else
+						'	SetupSendGUI(Selected1.Ships)
+						'Endif
+					Endif
+				Endif		
+			Endif
 	
+'			If RightClick And (Not ShowInfo Or Not ShowDenied) Then 
+'				If Mouse.X >= p.X-8 And Mouse.X <= p.X+8 And Mouse.Y >= p.Y-8 And Mouse.Y <= p.Y+8 Then 
+'					If p.Owner = CurrentPlayer Then
+'						ShowInfo = True			
+'						InfoPlanet = p
+'						RightClick = False
+'					Else
+'						InfoPlanet = p
+'						ShowDenied = True
+'						RightClick = False
+'					Endif
+'				Endif
+'			Endif			
+		Next		
+	End	
+	
+	Method SetupGUI()
+		layer = New GuiLayer(ScreenManager)
+		
+		btnShowPlanets = New GuiButton
+		btnShowPlanets.Layer = layer
+		btnShowPlanets.Location = New Vec2f(10, SCREEN_HEIGHT - 41)
+		btnShowPlanets.Width = 300
+		btnShowPlanets.Height = 40
+		btnShowPlanets.Handle = New Vec2f(0,0)		
+		btnShowPlanets.Font = arial24
+		btnShowPlanets.Text = "Show Planets"
+		btnShowPlanets.Surface.PatchData=New Int[](8)
+		btnShowPlanets.Surface.DrawData( GuiState.Idle ).Image=btn300x40		
+		btnShowPlanets.Surface.DrawData( GuiState.Idle ).Color=New Color( .7,.7,.7,1 )
+		btnShowPlanets.Surface.DrawData( GuiState.Down ).Scale=New Vec2f( .98,.98 )
+		btnShowPlanets.Label.DrawData( GuiState.Idle ).Color=New Color( .9,.9,.9,1 )
+		btnShowPlanets.Label.DrawData( GuiState.Down ).Scale=btnShowPlanets.Surface.DrawData( GuiState.Down ).Scale
+
+		btnShowFleets = New GuiButton
+		btnShowFleets.Layer = layer
+		btnShowFleets.Location = New Vec2f(320, SCREEN_HEIGHT - 41)
+		btnShowFleets.Width = 300
+		btnShowFleets.Height = 40
+		btnShowFleets.Handle = New Vec2f(0,0)		
+		btnShowFleets.Font = arial24
+		btnShowFleets.Text = "Show Fleets"
+		btnShowFleets.Surface.PatchData=New Int[](8)
+		btnShowFleets.Surface.DrawData( GuiState.Idle ).Image=btn300x40		
+		btnShowFleets.Surface.DrawData( GuiState.Idle ).Color=New Color( .7,.7,.7,1 )
+		btnShowFleets.Surface.DrawData( GuiState.Down ).Scale=New Vec2f( .98,.98 )
+		btnShowFleets.Label.DrawData( GuiState.Idle ).Color=New Color( .9,.9,.9,1 )
+		btnShowFleets.Label.DrawData( GuiState.Down ).Scale=btnShowFleets.Surface.DrawData( GuiState.Down ).Scale
+					
+		btnEndTurn = New GuiButton
+		btnEndTurn.Layer = layer
+		btnEndTurn.Location = New Vec2f(SCREEN_WIDTH - 310, SCREEN_HEIGHT - 41)
+		btnEndTurn.Width = 300
+		btnEndTurn.Height = 40
+		btnEndTurn.Handle = New Vec2f(0,0)		
+		btnEndTurn.Font = arial24
+		btnEndTurn.Text = "End Turn"
+		btnEndTurn.Surface.PatchData=New Int[](8)
+		btnEndTurn.Surface.DrawData( GuiState.Idle ).Image=btn300x40		
+		btnEndTurn.Surface.DrawData( GuiState.Idle ).Color=New Color( .7,.7,.7,1 )
+		btnEndTurn.Surface.DrawData( GuiState.Down ).Scale=New Vec2f( .98,.98 )
+		btnEndTurn.Label.DrawData( GuiState.Idle ).Color=New Color( .9,.9,.9,1 )
+		btnEndTurn.Label.DrawData( GuiState.Down ).Scale=btnShowFleets.Surface.DrawData( GuiState.Down ).Scale		
+	End Method
 End Class 
 
 Class SendFleet Extends Screen
@@ -934,14 +1098,14 @@ Class Planet Extends Sprite
 		If animated Then
 			canvas.Color = OwnerColor
 			canvas.DrawImage(frames[framecount], x, y, Deg2Rad(rotation))
-			If CurrentPlayer = owner And Mouse.X >= x - (frames[framecount].Width/2) And Mouse.X <= x + (frames[framecount].Width/2) And Mouse.Y >= y - (frames[framecount].Height/2) And Mouse.Y <= y + (frames[framecount].Height/2) Then
+			If CurrentPlayer = owner Then 'And Mouse.X >= x - (frames[framecount].Width/2) And Mouse.X <= x + (frames[framecount].Width/2) And Mouse.Y >= y - (frames[framecount].Height/2) And Mouse.Y <= y + (frames[framecount].Height/2) Then
 				canvas.Font = arial12
 				canvas.DrawText(Name, x, y+16, 0.5, 0)
 			Endif
 		Else
 			canvas.Color = OwnerColor
 			canvas.DrawImage(img, x, y, Deg2Rad(rotation))			
-			If CurrentPlayer = owner And Mouse.X >= x - (img.Width/2) And Mouse.X <= x + (img.Width/2) And Mouse.Y >= y - (img.Height/2) And Mouse.Y <= y + (img.Height/2) Then
+			If CurrentPlayer = owner Then 'And Mouse.X >= x - (img.Width/2) And Mouse.X <= x + (img.Width/2) And Mouse.Y >= y - (img.Height/2) And Mouse.Y <= y + (img.Height/2) Then
 				canvas.Font = arial12
 				canvas.DrawText(Name, x, y+16, 0.5, 0)
 			Endif

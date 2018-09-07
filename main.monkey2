@@ -48,11 +48,4 @@ Function LoadSettings()
 	MaxProduction = Cast<Int>(c.ReadString("MaxProd"))
 	MinProduction = Cast<Int>(c.ReadString("MinProd"))
 	MaxTurns = Cast<Int>(c.ReadString("Turns"))
-	
-	Print SCREEN_WIDTH
-	Print SCREEN_HEIGHT
-	Print MaxPlanets
-	Print MaxProduction
-	Print MinProduction
-	Print MaxTurns
 End Function 
