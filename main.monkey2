@@ -49,3 +49,18 @@ Function LoadSettings()
 	MinProduction = Cast<Int>(c.ReadString("MinProd"))
 	MaxTurns = Cast<Int>(c.ReadString("Turns"))
 End Function 
+
+Function GetDistance:Int(P1:Planet, P2:Planet, Scale:Int)
+	Local TmpDistance:Int
+	Local x1:Int = P1.X
+	Local y1:Int = P1.Y
+	Local x2:Int = P2.X
+	Local y2:Int = P2.Y
+	Local xdist:Int = Abs(x1 - x2)
+	Local ydist:Int = Abs(y1 - y2)
+
+	'pythagorean theorem x^2 + y^2 = z^2
+	TmpDistance = Sqrt((xdist * xdist) + (ydist * ydist)) / Scale
+
+	Return TmpDistance		
+End Function

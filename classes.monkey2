@@ -338,10 +338,13 @@ Class GameSetup Extends Screen
 		Endif
 		
 		If btnStart.Released Then 
+			btnStart.Released = False
+			GameYear = 3000
 			GameMap.MaxTurns = NumTurns
 			If Not MapGenerated Then 
 				GameMap.MinProduction = MinProd
 				GameMap.MaxProduction = MaxProd
+				MaxTurns = NumTurns
 				GameMap.GenerateMap(470,252,4,4,16,16,NumPlanets)	
 				MapGenerated = True						
 			Endif
@@ -633,6 +636,8 @@ Class Game Extends Screen
 	Field p2sel:Bool 
 	Field p1id:Int 
 	Field p2id:Int
+
+	Field InfoPlanet:Planet	
 		
 	Method RunOnce() Override
 		SetupGUI()
@@ -663,7 +668,7 @@ Class Game Extends Screen
 				canvas.DrawImage(slct, p.X - 8, p.Y - 8)
 			Endif	
 			
-			If p1sel And Not p2sel And p1id = p.ID Then 
+			If p1sel And Not p2sel And p1id = p.ID And Selected1.Owner = 1 Then 
 				canvas.DrawLine(p.X, p.Y, Mouse.X, Mouse.Y)				
 			Endif
 			
@@ -671,10 +676,47 @@ Class Game Extends Screen
 				canvas.DrawImage(slct, p.X - 8, p.Y - 8)				
 			Endif
 			
-			If p1sel And p2sel Then 
+			If p1sel And p2sel And Selected1.Owner = 1 Then 
 				canvas.DrawLine(Selected1.X, Selected1.Y, Selected2.X, Selected2.Y)				
 			Endif
 		Next
+
+		If InfoPlanet Then 
+			If InfoPlanet.Owner = 1 Then 
+				Local tmpcolor:Color = canvas.Color
+				Local imgx:Int = (SCREEN_WIDTH/2)-(panel250x400.Width/2) 
+				Local imgy:Int = (SCREEN_HEIGHT/2)-(panel250x400.Height/2)	
+			
+				canvas.Color = Color.White
+				canvas.DrawRect(imgx,imgy,250,400,panel250x400)
+				canvas.Font = arial24
+				canvas.DrawText(InfoPlanet.Name, imgx + 20, imgy + 30, 0.0, 0.5)
+				canvas.Font = arial16
+				canvas.DrawLine(imgx+20, imgy+42, imgx+220, imgy+42)
+				canvas.DrawText("Owner:", imgx + 30, imgy + 60, 0.0, 0.5)
+				canvas.DrawText("Player 1", imgx + 130, imgy + 60, 0.0, 0.5)
+				canvas.DrawText("Production:", imgx + 30, imgy + 80, 0.0, 0.5)
+				canvas.DrawText(InfoPlanet.Production, imgx + 130, imgy + 80, 0.0, 0.5)
+				canvas.DrawText("Ships:", imgx + 30, imgy + 100, 0.0, 0.5)
+				canvas.DrawText(InfoPlanet.Ships, imgx + 130, imgy + 100, 0.0, 0.5)
+				
+				canvas.Color = tmpcolor				
+			Else
+				Local tmpcolor:Color = canvas.Color
+				Local imgx:Int = (SCREEN_WIDTH/2)-(panel250x400.Width/2) 
+				Local imgy:Int = (SCREEN_HEIGHT/2)-(panel250x400.Height/2)	
+			
+				canvas.Color = Color.White
+				canvas.DrawRect(imgx,imgy,250,400,panel250x400)
+				canvas.Font = arial24
+				canvas.DrawText("YOU DO NOT OWN", SCREEN_WIDTH/2, imgy + 120, 0.5, 0.5)		
+				canvas.DrawText("THAT PLANET", SCREEN_WIDTH/2, imgy + 150, 0.5, 0.5)
+				canvas.Color = tmpcolor				
+			Endif			
+		Endif
+
+		canvas.Font = arial24
+		canvas.DrawText("Year: " + GameYear, SCREEN_WIDTH/2, SCREEN_HEIGHT - 24, 0.5, 0.5)
 		
 		layer.Update()
 		layer.Draw(canvas)		
@@ -689,14 +731,13 @@ Class Game Extends Screen
 
 		For Local p:Planet = Eachin GameMap.Planets
 			If LeftClick And Not p1sel Then 'set the variables for first selected planet
-				If Mouse.X >= p.X-8 And Mouse.X <= p.X+8 And Mouse.Y >= p.Y-8 And Mouse.Y <= p.Y+8 And p.Owner = CurrentPlayer Then 				
+				If Mouse.X >= p.X-8 And Mouse.X <= p.X+8 And Mouse.Y >= p.Y-8 And Mouse.Y <= p.Y+8 Then 'And p.Owner = CurrentPlayer Then 				
 					p1sel = True 
 					p1id = p.ID
 					Selected1 = p
-					'KillMapGui()
 				Endif
 			Elseif LeftClick And p1sel And Not p2sel Then 
-				If Mouse.X >= p.X-8 And Mouse.X <= p.X+8 And Mouse.Y >= p.Y-8 And Mouse.Y <= p.Y+8 Then 
+				If Mouse.X >= p.X-8 And Mouse.X <= p.X+8 And Mouse.Y >= p.Y-8 And Mouse.Y <= p.Y+8 And Selected1.Owner = 1 Then 
 					If p1id = p.ID Then 'we can't select the same planet so kill the transfer
 						p1id = 0
 						p1sel = False
@@ -705,31 +746,109 @@ Class Game Extends Screen
 						p2sel = True 
 						p2id = p.ID
 						Selected2 = p
-						'ShowShipSel = True
-						'KillMapGui()
-						'If SendGuiCreated Then 
-						'	EnableSendGUI()
-						'Else
-						'	SetupSendGUI(Selected1.Ships)
-						'Endif
+						
+						sendfleet.Selected1 = Selected1
+						sendfleet.Selected2 = Selected2
+						sendfleet.Max = Selected1.Ships
+						sendfleet.Set()
+						
+						p1sel = False
+						p1id = 0
+						Selected1 = Null
+						p2sel = False
+						p2id = 0
+						Selected2 = Null									
 					Endif
 				Endif		
 			Endif
 	
-'			If RightClick And (Not ShowInfo Or Not ShowDenied) Then 
-'				If Mouse.X >= p.X-8 And Mouse.X <= p.X+8 And Mouse.Y >= p.Y-8 And Mouse.Y <= p.Y+8 Then 
-'					If p.Owner = CurrentPlayer Then
-'						ShowInfo = True			
-'						InfoPlanet = p
-'						RightClick = False
-'					Else
-'						InfoPlanet = p
-'						ShowDenied = True
-'						RightClick = False
-'					Endif
-'				Endif
-'			Endif			
-		Next		
+			If RightClick And (Not InfoPlanet) Then 
+				If Mouse.X >= p.X-8 And Mouse.X <= p.X+8 And Mouse.Y >= p.Y-8 And Mouse.Y <= p.Y+8 Then 
+					If p.Owner = CurrentPlayer Then
+						InfoPlanet = p
+						RightClick = False
+					Else
+						InfoPlanet = p
+						RightClick = False
+					Endif
+				Endif
+			Endif			
+		Next
+		
+		If LeftClick And InfoPlanet Then 
+			InfoPlanet = Null			
+		Endif
+		
+		If AKey And p1sel And Not p2sel Then 
+			'Send ALL available ships to this planet by creating fleets and sending them
+			For Local p:Planet = Eachin GameMap.Planets
+				If p.Owner = 1 And p <> Selected1 And p.Ships > 0 Then
+					Local tmpfleet:Fleet = New Fleet
+					tmpfleet.Ships = p.Ships
+					p.Ships = 0 
+					tmpfleet.Source = p
+					tmpfleet.Destination = Selected1
+					Local tmpdistance:Int = GetDistance(Selected1, p, 50)
+					If tmpdistance = 0 tmpdistance = 1
+					tmpfleet.Turns = tmpdistance
+					P1Fleets.Add(tmpfleet)
+				Endif								
+			Next
+			p1sel = False
+			p1id = 0
+			Selected1 = Null
+		Endif
+		
+		If btnShowFleets.Released Then 
+			btnShowFleets.Released = False
+			showfleets.Set()
+		Endif		
+		
+		If btnShowPlanets.Released Then 
+			btnShowPlanets.Released = False
+			showplanets.Set()			
+		Endif
+
+		If btnEndTurn.Released Or EKey Then 
+			btnEndTurn.Released = False
+			GameYear += 1
+			
+			Local OwnAll:Bool = True
+			
+			For Local p:Planet = Eachin GameMap.Planets
+				p.Ships += p.Production
+				If p.Owner <> 1 Then 'you don't own all planets
+					OwnAll = False				
+				Endif
+			Next			
+			
+			For Local f:Fleet = Eachin P1Fleets
+				f.Turns -= 1				
+			Next
+			
+			'Check to see if game over on turns or owning all planets
+			If GameYear = 3000 + MaxTurns Or OwnAll Then 'game over
+				gameover.Set()			
+			Endif
+		Endif
+		
+		For Local f:Fleet = Eachin P1Fleets
+			If f.Turns = 0 And Not f.Done Then 
+				If f.Destination.Owner = 0 Then
+					combat.fleet = f
+					combat.Set()				
+				Else
+					reinforcements.fleet = f
+					reinforcements.Set()			
+				Endif
+			Endif			
+		Next
+		
+		For Local t:Int = P1Fleets.Length - 1 To 0 Step -1 
+			If P1Fleets[t].Done Then 
+				P1Fleets.Remove(P1Fleets[t])
+			Endif			
+		Next				
 	End	
 	
 	Method SetupGUI()
@@ -783,27 +902,480 @@ Class Game Extends Screen
 End Class 
 
 Class SendFleet Extends Screen
+	Field layer:GuiLayer 
+	Field slider:GuiSliderKnob = New GuiSliderKnob
+	Field btnOk:GuiButton = New GuiButton
+	Field btnCancel:GuiButton = New GuiButton
+	Field max:Int
+
+	Field Selected1:Planet
+	Field Selected2:Planet
+
+	Property Max:Int()
+		Return max
+	Setter(t:Int)
+		slider.Maximum = t
+		max = t
+	End Property
 	
+	Method RunOnce() Override
+		SetupGUI()	
+	End
+
+	Method OnKeyEvent( event:KeyEvent ) Override
+	End
+
+	Method OnMouseEvent( event:MouseEvent ) Override
+	End
+
+	Method OnStart() Override
+		
+	End
+
+	Method OnStop() Override
+		
+	End
+
+	Method OnRender( canvas:Canvas ) Override
+		For Local p:Planet = Eachin GameMap.Planets
+			p.RenderSprite(canvas)					
+		Next		
+
+		canvas.DrawImage(panel400x250, SCREEN_WIDTH/2-200, 750)
+		Local tmpval:Int = Cast<Int>(slider.Value)
+		If tmpval < 0 tmpval = 0
+		Local tmpcolor:Color = canvas.Color
+		canvas.Color = Color.White
+		canvas.Font = arial24
+		canvas.DrawText("Send Ships", SCREEN_WIDTH/2-150,785,0,0.5)
+		canvas.DrawText(tmpval, SCREEN_WIDTH/2,865,0.5,0.5)
+		canvas.Font = arial16
+		canvas.DrawText("Ships Available: "+Selected1.Ships, SCREEN_WIDTH/2-150,820,0,0.5)
+		Local tmpdistance:Int = GetDistance(Selected1, Selected2, 50)
+		If tmpdistance = 0 tmpdistance = 1
+		canvas.DrawText("Turns until arrival: " + tmpdistance, SCREEN_WIDTH/2-150, 835,0,0.5)
+		canvas.Color = New Color(0.6,0.6,1,1)
+		canvas.DrawRect(SCREEN_WIDTH/2-150,898,300,4)
+		canvas.Color = tmpcolor
+		
+		layer.Update()
+		layer.Draw(canvas)
+	End
+
+	Method OnUpdate() Override
+		If btnOk.Released And slider.Value > 0 Then 
+			Local tmpfleet:Fleet = New Fleet
+			Selected1.Ships -= Cast<Int>(slider.Value)
+			tmpfleet.Ships = Cast<Int>(slider.Value)
+			tmpfleet.Source = Selected1
+			tmpfleet.Destination = Selected2
+			Local tmpdistance:Int = GetDistance(Selected1, Selected2, 50)
+			If tmpdistance = 0 tmpdistance = 1
+			tmpfleet.Turns = tmpdistance
+			P1Fleets.Add(tmpfleet)
+			btnOk.Released = False
+			game.Set()
+		Endif		
+		
+		If btnCancel.Released Then 
+			btnCancel.Released = False
+			game.Set()
+		Endif	
+	End	
+
+	Method SetupGUI()
+		layer = New GuiLayer(ScreenManager)
+		
+		slider=New GuiSliderKnob
+		slider.Layer=layer
+		slider.Surface.DrawData( GuiState.Idle ).Image=sliderknob
+		slider.Location=New Vec2f( SCREEN_WIDTH/2-150,900 )
+		slider.Surface.DrawData( GuiState.Idle ).Color=New Color( .5,.5,.5,1 )
+		slider.Surface.DrawData( GuiState.Down ).Scale=New Vec2f( .95,.95 )
+		slider.Surface.PatchData=New Int[](8)
+		slider.Width=20
+		slider.Height=35
+		slider.Length=300
+		slider.Maximum=max
+		slider.Value=max
+		slider.Name="sliderKnob 1"
+		slider.Type=1			
+
+		btnOk = New GuiButton
+		btnOk.Layer = layer
+		btnOk.Location = New Vec2f(SCREEN_WIDTH/2 - 150, 930)
+		btnOk.Width = 100
+		btnOk.Height = 40
+		btnOk.Handle = New Vec2f(0,0)		
+		btnOk.Font = arial24
+		btnOk.Text = "OK"
+		btnOk.Surface.PatchData=New Int[](8)
+		btnOk.Surface.DrawData( GuiState.Idle ).Image=btn100x40		
+		btnOk.Surface.DrawData( GuiState.Idle ).Color=New Color( .7,.7,.7,1 )
+		btnOk.Surface.DrawData( GuiState.Down ).Scale=New Vec2f( .98,.98 )
+		btnOk.Label.DrawData( GuiState.Idle ).Color=New Color( .9,.9,.9,1 )
+		btnOk.Label.DrawData( GuiState.Down ).Scale=btnOk.Surface.DrawData( GuiState.Down ).Scale	
+		
+		btnCancel = New GuiButton
+		btnCancel.Layer = layer
+		btnCancel.Location = New Vec2f(SCREEN_WIDTH/2 + 50, 930)
+		btnCancel.Width = 100
+		btnCancel.Height = 40
+		btnCancel.Handle = New Vec2f(0,0)		
+		btnCancel.Font = arial24
+		btnCancel.Text = "Cancel"
+		btnCancel.Surface.PatchData=New Int[](8)
+		btnCancel.Surface.DrawData( GuiState.Idle ).Image=btn100x40		
+		btnCancel.Surface.DrawData( GuiState.Idle ).Color=New Color( .7,.7,.7,1 )
+		btnCancel.Surface.DrawData( GuiState.Down ).Scale=New Vec2f( .98,.98 )
+		btnCancel.Label.DrawData( GuiState.Idle ).Color=New Color( .9,.9,.9,1 )
+		btnCancel.Label.DrawData( GuiState.Down ).Scale=btnCancel.Surface.DrawData( GuiState.Down ).Scale		
+	End Method 
 End Class 
 
 Class Combat Extends Screen
+	Field fleet:Fleet
+	Field CurTime:Int
+	Field DeltaTime:Int
+	Field CombatDelta:Int = 5
+
+	Field AtkWin:Bool
+	Field DefWin:Bool
+	Field AtkPct:Int = 30
+	Field DefPct:Int = 35
+	
+	Method RunOnce() Override
+		
+	End
+
+	Method OnKeyEvent( event:KeyEvent ) Override
+	End
+
+	Method OnMouseEvent( event:MouseEvent ) Override
+	End
+
+	Method OnStart() Override
+		CurTime = Millisecs()
+		DeltaTime = Millisecs()		
+	End
+
+	Method OnStop() Override
+		
+	End
+
+	Method OnRender( canvas:Canvas ) Override
+		For Local p:Planet = Eachin GameMap.Planets
+			p.RenderSprite(canvas)					
+		Next
+		
+		Local tmpx:Int = SCREEN_WIDTH/2 - 200
+		Local tmpy:Int = SCREEN_HEIGHT/2 - 125
+		canvas.DrawImage(panel400x250, tmpx, tmpy)	
+		
+		canvas.Font = arial16
+		canvas.DrawText("COMBAT", tmpx + 200, tmpy + 40, 0.5, 0.5)
+		
+		canvas.DrawText("ATTACKER", tmpx + 50, tmpy + 80, 0, 0.5)
+		canvas.DrawText("DEFENDER", tmpx + 350, tmpy + 80, 1, 0.5)
+		
+		canvas.DrawText(fleet.Ships, tmpx + 80, tmpy + 120, 0.5, 0.5)
+		canvas.DrawText(fleet.Destination.Ships, tmpx + 320, tmpy + 120, 0.5, 0.5)
+		
+		'Do a single round of combat  for each side if delta time expired
+		If CurTime - DeltaTime >= CombatDelta And Not (AtkWin Or DefWin) Then 
+			CurTime = Millisecs()
+			DeltaTime = Millisecs()
+			
+			Local SubAmt:Int = Min(fleet.Ships, fleet.Destination.Ships) / 100 + 1
+			
+			Local Attacker:Int = Rnd(1, 101)
+			Local Defender:Int = Rnd(1, 101)
+			
+			If Attacker <= AtkPct Then 'Attacker wins one
+				fleet.Destination.Ships -= SubAmt
+				If fleet.Destination.Ships < 0 fleet.Destination.Ships = 0
+			Endif
+			
+			If Defender <= DefPct Then 'Defender wins one
+				fleet.Ships -= SubAmt
+				If fleet.Ships < 0 fleet.Ships = 0
+			End If
+			
+			If fleet.Ships = 0 Then 
+				DefWin = True
+			Endif
+			
+			If fleet.Destination.Ships = 0 Then 
+				AtkWin = True				
+			Endif
+		Else
+			CurTime = Millisecs()			
+		Endif
+		
+		If AtkWin Or DefWin Then
+			If AtkWin Then 
+				canvas.DrawText("Attacker Wins", tmpx + 200, tmpy + 150, 0.5, 0.5)
+				If CurTime - DeltaTime >= 2000 Then 
+					fleet.Destination.Ships = fleet.Ships
+					fleet.Destination.Owner = 1
+					fleet.Destination.OwnerColor = Color.Red
+					AtkWin = False
+					DefWin = False	
+					fleet.Done = True
+					game.Set()			
+				Endif
+			Endif
+			
+			If DefWin Then 
+				canvas.DrawText("Defender Wins", tmpx + 200, tmpy + 150, 0.5, 0.5)
+				If CurTime - DeltaTime >= 2000 Then 
+					AtkWin = False
+					DefWin = False
+					fleet.Done = True
+					game.Set()				
+				Endif			
+			Endif
+
+		Endif		
+	End
+
+	Method OnUpdate() Override
+		
+	End	
 	
 End Class 
 
 Class Reinforcements Extends Screen
+	Field fleet:Fleet
+	Field CurTime:Int
+	Field DeltaTime:Int
 	
+	Method RunOnce() Override
+		
+	End
+
+	Method OnKeyEvent( event:KeyEvent ) Override
+	End
+
+	Method OnMouseEvent( event:MouseEvent ) Override
+	End
+
+	Method OnStart() Override
+		CurTime = Millisecs()
+		DeltaTime = Millisecs()		
+	End
+
+	Method OnStop() Override
+		
+	End
+
+	Method OnRender( canvas:Canvas ) Override
+		For Local p:Planet = Eachin GameMap.Planets
+			p.RenderSprite(canvas)					
+		Next		
+
+		Local tmpx:Int = SCREEN_WIDTH/2 - 200
+		Local tmpy:Int = SCREEN_HEIGHT/2 - 125
+		canvas.DrawImage(panel400x250, tmpx, tmpy)	
+		canvas.Font = arial16
+		canvas.DrawText("REINFORCEMENTS HAVE ARRIVED", tmpx + 200, tmpy + 50, 0.5, 0.5)
+		canvas.DrawText(fleet.Destination.Name, tmpx + 200, tmpy + 80, 0.5, 0.5)
+		canvas.DrawText("SHIPS: " + fleet.Ships, tmpx + 200, tmpy + 110, 0.5, 0.5)		
+		If CurTime - DeltaTime >= 2000 Then 
+			fleet.Done = True
+			fleet.Destination.Ships += fleet.Ships
+			CurTime = Millisecs()
+			DeltaTime = Millisecs()	
+			game.Set()
+		Else
+			CurTime = Millisecs()			
+		Endif		
+	End
+
+	Method OnUpdate() Override
+		
+	End		
 End Class 
 
 Class Fleets Extends Screen
-	
+	Method RunOnce() Override
+		
+	End
+
+	Method OnKeyEvent( event:KeyEvent ) Override
+	End
+
+	Method OnMouseEvent( event:MouseEvent ) Override
+	End
+
+	Method OnStart() Override
+		
+	End
+
+	Method OnStop() Override
+		
+	End
+
+	Method OnRender( canvas:Canvas ) Override
+		For Local p:Planet = Eachin GameMap.Planets
+			p.RenderSprite(canvas)					
+		Next		
+
+		Local idx:Int = 1
+		canvas.Font = arial16
+		canvas.DrawImage(panel400x1070,SCREEN_WIDTH - 405, 5)	
+		canvas.DrawText("SOURCE", SCREEN_WIDTH - 380, 40, 0,0.5)
+		canvas.DrawText("SOURCE", SCREEN_WIDTH - 379, 40, 0,0.5)
+		canvas.DrawText("DESTINATION", SCREEN_WIDTH - 250, 40, 0, 0.5)
+		canvas.DrawText("DESTINATION", SCREEN_WIDTH - 249, 40, 0, 0.5)
+		canvas.DrawText("SHIPS", SCREEN_WIDTH - 150, 40, 0, 0.5)
+		canvas.DrawText("SHIPS", SCREEN_WIDTH - 149, 40, 0, 0.5)
+		canvas.DrawText("TURNS", SCREEN_WIDTH - 80, 40, 0, 0.5)
+		canvas.DrawText("TURNS", SCREEN_WIDTH - 79, 40, 0, 0.5)
+				
+		For Local f:Fleet = Eachin P1Fleets
+			canvas.DrawText(f.Source.Name, SCREEN_WIDTH - 380, idx * 20 + 45, 0, 0.5)
+			canvas.DrawText(f.Destination.Name, SCREEN_WIDTH - 250, idx * 20 + 45, 0, 0.5)
+			canvas.DrawText(f.Ships, SCREEN_WIDTH - 150, idx * 20 + 45, 0, 0.5)
+			canvas.DrawText(f.Turns, SCREEN_WIDTH - 80, idx * 20 + 45, 0, 0.5)
+			idx += 1						
+		Next			
+	End
+
+	Method OnUpdate() Override
+		If Mouse.ButtonReleased(MouseButton.Left) Then 
+			game.Set()
+		Endif	
+	End		
 End Class 
 
 Class Planets Extends Screen
-	
+	Method RunOnce() Override
+		
+	End
+
+	Method OnKeyEvent( event:KeyEvent ) Override
+	End
+
+	Method OnMouseEvent( event:MouseEvent ) Override
+	End
+
+	Method OnStart() Override
+		
+	End
+
+	Method OnStop() Override
+		
+	End
+
+	Method OnRender( canvas:Canvas ) Override
+		For Local p:Planet = Eachin GameMap.Planets
+			p.RenderSprite(canvas)					
+		Next		
+
+		Local idx:Int = 1
+		Local pcount:Int = 0
+		Local poffset:Int = 380
+		
+		'find out if we need one or two panels...
+		For Local p:Planet = Eachin GameMap.Planets
+			If p.Owner = 1 pcount += 1			
+		Next
+
+		canvas.Font = arial16
+		canvas.DrawImage(panel400x1070, SCREEN_WIDTH - 405, 5)
+		canvas.DrawText("PLANET NAME", SCREEN_WIDTH - 380, 40, 0,0.5)
+		canvas.DrawText("PLANET NAME", SCREEN_WIDTH - 379, 40, 0,0.5)
+		canvas.DrawText("PROD", SCREEN_WIDTH - 150, 40, 0, 0.5)
+		canvas.DrawText("PROD", SCREEN_WIDTH - 149, 40, 0, 0.5)
+		canvas.DrawText("SHIPS", SCREEN_WIDTH - 90, 40, 0, 0.5)
+		canvas.DrawText("SHIPS", SCREEN_WIDTH - 89, 40, 0, 0.5)
+
+		If pcount > 50 Then 'we need two panels
+			canvas.DrawImage(panel400x1070, SCREEN_WIDTH - 810, 5)
+			canvas.DrawText("PLANET NAME", SCREEN_WIDTH - 780, 40, 0,0.5)
+			canvas.DrawText("PLANET NAME", SCREEN_WIDTH - 779, 40, 0,0.5)
+			canvas.DrawText("PROD", SCREEN_WIDTH - 550, 40, 0, 0.5)
+			canvas.DrawText("PROD", SCREEN_WIDTH - 549, 40, 0, 0.5)
+			canvas.DrawText("SHIPS", SCREEN_WIDTH - 490, 40, 0, 0.5)
+			canvas.DrawText("SHIPS", SCREEN_WIDTH - 489, 40, 0, 0.5)
+		Endif		
+
+		If pcount > 50 Then 'start in left panel
+			poffset = 780		
+		Endif
+				
+		For Local p:Planet = Eachin GameMap.Planets
+			If p.Owner = 1 Then 
+				canvas.DrawText(p.Name, SCREEN_WIDTH - poffset, idx * 20 + 45, 0, 0.5)
+				canvas.DrawText(p.Production, SCREEN_WIDTH - poffset + 230, idx * 20 + 45, 0, 0.5)
+				canvas.DrawText(p.Ships, SCREEN_WIDTH - poffset + 290, idx * 20 + 45, 0, 0.5)
+				idx += 1
+				If idx = 51 Then 
+					idx = 1
+					poffset = 380
+				Endif	
+			Endif			
+		Next
+	End
+
+	Method OnUpdate() Override
+		If Mouse.ButtonReleased(MouseButton.Left) Then 
+			game.Set()
+		Endif		
+	End		
 End Class 
 
 Class GameOver Extends Screen
+	Field CurTime:Int
+	Field DeltaTime:Int
 	
+	Method RunOnce() Override
+		
+	End
+
+	Method OnKeyEvent( event:KeyEvent ) Override
+	End
+
+	Method OnMouseEvent( event:MouseEvent ) Override
+	End
+
+	Method OnStart() Override
+		CurTime = Millisecs()
+		DeltaTime = Millisecs()		
+	End
+
+	Method OnStop() Override
+		
+	End
+
+	Method OnRender( canvas:Canvas ) Override
+		Local tmpx:Int = SCREEN_WIDTH/2 - 200
+		Local tmpy:Int = SCREEN_HEIGHT/2 - 125
+		canvas.DrawImage(panel400x250, tmpx, tmpy)	
+
+		Local Winner:Bool = True
+		For Local p:Planet = Eachin GameMap.Planets
+			If p.Owner = 0 Winner = False			
+		Next
+		
+		canvas.Font = arial24
+		If Winner Then 
+			canvas.DrawText("YOU WIN!", tmpx + 200, tmpy + 50, 0.5, 0.5)
+		Else
+			canvas.DrawText("YOU LOST!", tmpx + 200, tmpy + 50, 0.5, 0.5)						
+		Endif
+
+		If CurTime - DeltaTime >= 5000 Then 
+			menu.Set()
+		Else
+			CurTime = Millisecs()
+		Endif			
+	End
+
+	Method OnUpdate() Override
+		
+	End	
 End Class 
 
 
