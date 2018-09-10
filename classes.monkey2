@@ -728,6 +728,8 @@ Class Game Extends Screen
 		Local EscKey:Bool = Keyboard.KeyReleased(Key.Escape)
 		Local AKey:Bool = Keyboard.KeyReleased(Key.A)
 		Local EKey:Bool = Keyboard.KeyReleased(Key.E)
+		Local FKey:Bool = Keyboard.KeyReleased(Key.F)
+		Local PKey:Bool = Keyboard.KeyReleased(Key.P)
 
 		For Local p:Planet = Eachin GameMap.Planets
 			If LeftClick And Not p1sel Then 'set the variables for first selected planet
@@ -799,12 +801,12 @@ Class Game Extends Screen
 			Selected1 = Null
 		Endif
 		
-		If btnShowFleets.Released Then 
+		If btnShowFleets.Released Or FKey Then 
 			btnShowFleets.Released = False
 			showfleets.Set()
 		Endif		
 		
-		If btnShowPlanets.Released Then 
+		If btnShowPlanets.Released Or PKey Then 
 			btnShowPlanets.Released = False
 			showplanets.Set()			
 		Endif
@@ -827,13 +829,13 @@ Class Game Extends Screen
 			Next
 			
 			'Check to see if game over on turns or owning all planets
-			If GameYear = 3000 + MaxTurns Or OwnAll Then 'game over
+			If GameYear = 3000 + MaxTurns + 1 Or OwnAll Then 'game over
 				gameover.Set()			
 			Endif
 		Endif
 		
 		For Local f:Fleet = Eachin P1Fleets
-			If f.Turns = 0 And Not f.Done Then 
+			If f.Turns <= 0 And Not f.Done Then 
 				If f.Destination.Owner = 0 Then
 					combat.fleet = f
 					combat.Set()				
