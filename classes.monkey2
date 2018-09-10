@@ -320,7 +320,7 @@ Class GameSetup Extends Screen
 
 		If btnSubTurn.Released Then 
 			NumTurns -= 25
-			If NumTurns < 10 NumTurns = 10
+			If NumTurns < 25 NumTurns = 25
 			btnTurns.Text = NumTurns				
 		Endif
 
@@ -829,7 +829,7 @@ Class Game Extends Screen
 			Next
 			
 			'Check to see if game over on turns or owning all planets
-			If GameYear = 3000 + MaxTurns + 1 Or OwnAll Then 'game over
+			If GameYear >= (3000 + MaxTurns + 1) Or OwnAll Then 'game over
 				gameover.Set()			
 			Endif
 		Endif
@@ -1043,8 +1043,8 @@ Class Combat Extends Screen
 
 	Field AtkWin:Bool
 	Field DefWin:Bool
-	Field AtkPct:Int = 30
-	Field DefPct:Int = 35
+	Field AtkPct:Int = 40
+	Field DefPct:Int = 42
 	
 	Method RunOnce() Override
 		
